@@ -4,13 +4,9 @@ WORKDIR /app
 # Install bun
 RUN npm install -g bun
 
-# Install all dependencies (including devDeps for build)
-COPY package.json bun.lock ./
-COPY patches/ ./patches/
-RUN bun install --ignore-scripts
-
-# Copy source
+# Copy full source (workspaces need each package.json to resolve internal deps)
 COPY . .
+RUN bun install --ignore-scripts
 
 # Build renderer (no Electron needed) and server bundle
 RUN bun run build:renderer:web
@@ -20,11 +16,12 @@ RUN node scripts/build-server.mjs
 FROM oven/bun:latest AS runtime
 WORKDIR /app
 
-# Copy only build artifacts and production deps
+# Copy build artifacts, production deps, and workspace manifests
 COPY --from=builder /app/dist-server ./dist-server
 COPY --from=builder /app/out/renderer ./out/renderer
-COPY package.json bun.lock ./
-COPY patches/ ./patches/
+COPY --from=builder /app/package.json /app/bun.lock ./
+COPY --from=builder /app/patches ./patches
+COPY --from=builder /app/packages ./packages
 RUN bun install --production --ignore-scripts
 
 ENV PORT=3000
