@@ -11,7 +11,7 @@ RUN bun install --ignore-scripts
 # Build the SPA renderer used by the standalone web runtime.
 # NODE_OPTIONS mirrors .github/workflows/_build-reusable.yml, which needs an
 # increased heap for this same electron-vite build step (see PR #3313).
-ENV NODE_OPTIONS=--max-old-space-size=8192
+ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN bun run package
 
 # Fetch the aioncore backend binary (public GitHub release, no token required)
