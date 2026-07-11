@@ -1,4 +1,4 @@
-FROM node:20-slim AS builder
+FROM node:20-slim
 WORKDIR /app
 
 # Install bun
@@ -8,29 +8,20 @@ RUN npm install -g bun
 COPY . .
 RUN bun install --ignore-scripts
 
-# Build renderer (no Electron needed) and server bundle
-RUN bun run build:renderer:web
-RUN node scripts/build-server.mjs
+# Build the SPA renderer used by the standalone web runtime
+RUN bun run package
 
-# ---- Runtime image ----
-FROM oven/bun:latest AS runtime
-WORKDIR /app
+# Fetch the aioncore backend binary (public GitHub release, no token required)
+RUN node scripts/prepareAioncore.js
 
-# Copy build artifacts, production deps, and workspace manifests
-COPY --from=builder /app/dist-server ./dist-server
-COPY --from=builder /app/out/renderer ./out/renderer
-COPY --from=builder /app/package.json /app/bun.lock ./
-COPY --from=builder /app/patches ./patches
-COPY --from=builder /app/packages ./packages
-RUN bun install --production --ignore-scripts
-
-ENV PORT=3000
 ENV NODE_ENV=production
-ENV ALLOW_REMOTE=true
-ENV DATA_DIR=/data
+ENV AIONUI_PORT=3000
+ENV AIONUI_ALLOW_REMOTE=true
+ENV AIONUI_DATA_DIR=/data
+ENV AIONUI_OPEN_BROWSER=0
 
 # SQLite data volume — mount with: -v $(pwd)/data:/data
 VOLUME ["/data"]
 EXPOSE 3000
 
-CMD ["bun", "dist-server/server.mjs"]
+CMD ["bun", "run", "webui:prod:remote"]
