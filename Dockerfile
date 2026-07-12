@@ -1,6 +1,9 @@
 FROM node:20-slim
 WORKDIR /app
 
+# Install wget (needed by scripts/prepareAioncore.js to fetch the aioncore binary)
+RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates && rm -rf /var/lib/apt/lists/*
+
 # Install bun
 RUN npm install -g bun
 
